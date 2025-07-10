@@ -104,7 +104,7 @@ class LWDETR(nn.Module):
         from transformers import AutoConfig
         from transformers.models.mask2former.modeling_mask2former import Mask2FormerPixelDecoder, Mask2FormerPixelDecoderOutput
         config = AutoConfig.from_pretrained('facebook/mask2former-swin-tiny-coco-instance')
-        config.encoder_layers=3
+        config.encoder_layers=0
         self.pixel_decoder = Mask2FormerPixelDecoder(config, feature_channels = [256,256,256])
         self.spatial_proj = nn.Conv2d(256, hidden_dim, kernel_size=(1, 1), stride=(1, 1))
         # self.spatial_proj = nn.Conv2d(256, hidden_dim, kernel_size=(1, 1), stride=(1, 1))
@@ -769,12 +769,12 @@ def build_criterion_and_postprocessors(args):
     device = torch.device(args.device)
     matcher = build_matcher(args)
     weight_dict = {
-      'loss_ce': args.cls_loss_coef, 
-      'loss_bbox': args.bbox_loss_coef,
-      'loss_dice': 1,
+      'loss_ce': 2, 
+      'loss_bbox': 5,
+      'loss_dice': 2,
       'loss_mask': 2,
+      'loss_giou': 2,
     }
-    weight_dict['loss_giou'] = args.giou_loss_coef
     # TODO this is a hack
     if args.aux_loss:
         aux_weight_dict = {}

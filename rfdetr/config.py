@@ -12,7 +12,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is
 class ModelConfig(BaseModel):
     encoder: Literal["dinov2_windowed_small", "dinov2_windowed_base"]
     out_feature_indexes: List[int]
-    dec_layers: int = 3
+    dec_layers: int = 6
     two_stage: bool = True
     projector_scale: List[Literal["P3", "P4", "P5"]]
     hidden_dim: int
@@ -27,7 +27,7 @@ class ModelConfig(BaseModel):
     pretrain_weights: Optional[str] = None
     device: Literal["cpu", "cuda", "mps"] = DEVICE
     resolution: int = 560
-    group_detr: int = 13
+    group_detr: int = 1
     gradient_checkpointing: bool = False
 
 class RFDETRBaseConfig(ModelConfig):
@@ -48,7 +48,7 @@ class RFDETRLargeConfig(RFDETRBaseConfig):
     sa_nheads: int = 12
     ca_nheads: int = 24
     dec_n_points: int = 4
-    projector_scale: List[Literal["P3", "P4", "P5"]] = ["P3", "P5"]
+    projector_scale: List[Literal["P3", "P4", "P5"]] = ["P3", "P4","P5"]
     pretrain_weights: Optional[str] = "rf-detr-large.pth"
 
 class TrainConfig(BaseModel):

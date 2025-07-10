@@ -124,11 +124,10 @@ class Model:
                 if any(name.endswith(x) for x in query_param_names):
                     checkpoint['model'][name] = state[:num_desired_queries]
 
-            # current_model_dict = self.model.state_dict()
-
-            # new_state_dict={k:v if v.size()==current_model_dict[k].size()  else  current_model_dict[k] for k,v in zip(current_model_dict.keys(), checkpoint['model'].values())}
-            # self.model.load_state_dict(new_state_dict, strict=False)
-            self.model.load_state_dict(checkpoint['model'], strict=False)
+            current_model_dict = self.model.state_dict()
+            new_state_dict={k:v if v.size()==current_model_dict[k].size()  else  current_model_dict[k] for k,v in zip(current_model_dict.keys(), checkpoint['model'].values())}
+            self.model.load_state_dict(new_state_dict, strict=False)
+            # self.model.load_state_dict(checkpoint['model'], strict=False)
 
         if args.backbone_lora:
             print("Applying LORA to backbone")
@@ -191,7 +190,7 @@ class Model:
 
         param_dicts = [p for p in param_dicts if p['params'].requires_grad]
 
-        optimizer = torch.optim.AdamW(param_dicts, lr=args.lr, 
+        optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=args.lr, 
                                     weight_decay=args.weight_decay)
         # Choose the learning rate scheduler based on the new argument
 
