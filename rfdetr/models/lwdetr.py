@@ -106,10 +106,12 @@ class LWDETR(nn.Module):
         config = AutoConfig.from_pretrained('facebook/mask2former-swin-tiny-coco-instance')
         config.encoder_layers=0
         self.pixel_decoder = Mask2FormerPixelDecoder(config, feature_channels = [256,256,256])
-        self.spatial_proj = nn.Conv2d(256, hidden_dim, kernel_size=(1, 1), stride=(1, 1))
-        # self.spatial_proj = nn.Conv2d(256, hidden_dim, kernel_size=(1, 1), stride=(1, 1))
-        # self.pixel_layernorm = nn.LayerNorm(256)
-        self.pixel_layernorm = nn.BatchNorm2d(256)  # giống LayerNorm theo channel
+        self.spatial_proj = nn.ModuleList([
+          nn.Conv2d(256, hidden_dim, kernel_size=(1, 1), stride=(1, 1)),
+          nn.Conv2d(256, hidden_dim, kernel_size=(1, 1), stride=(1, 1)),
+          nn.Conv2d(256, hidden_dim, kernel_size=(1, 1), stride=(1, 1)),
+        ])
+        self.spatial_backbone = torch.load('/content/Hiera_sam2.1_hiera_base_plus.pt', weights_only=False)
 
     def reinitialize_detection_head(self, num_classes):
         # Create new classification head
@@ -152,8 +154,14 @@ class LWDETR(nn.Module):
         """
         if isinstance(samples, (list, torch.Tensor)):
             samples = nested_tensor_from_tensor_list(samples)
+        B, C, H, W = samples.tensors.shape
+        pixel_values_2 = samples.tensors
+        mask_2 = samples.mask
+        samples.tensors = nn.functional.interpolate(pixel_values_2, size=(H//2, W//2), mode="bilinear", align_corners=False)
+        samples.mask = nn.functional.interpolate(mask_2.unsqueeze(1).float(), size=(H//2, W//2), mode="nearest").squeeze(1).bool()
         features, poss = self.backbone(samples)
-        o = self.spatial_backbone(samples.tensors)
+        features_2 = self.spatial_backbone(pixel_values_2)['backbone_fpn']
+
         # print('o[vision_features]=', o['vision_features'].shape)
         # srcs2 = []
         # for feat in o['backbone_fpn'][:2]:
@@ -165,8 +173,8 @@ class LWDETR(nn.Module):
         masks = []
         for l, feat in enumerate(features):
             src, mask = feat.decompose()
-            src2 = nn.functional.interpolate(o['backbone_fpn'][l], size=src.shape[-2:], mode="bilinear", align_corners=False)
-            src2 = self.spatial_proj(src2)
+            src2 = self.spatial_proj[l](features_2[l])
+            src2 = nn.functional.interpolate(src2, size=src.shape[-2:], mode="bilinear", align_corners=False)
             # src2 = self.pixel_layernorm(src2)
             # self.pixel_layernorm
             # print('src=', src.shape)
@@ -175,12 +183,8 @@ class LWDETR(nn.Module):
             srcs2.append(src2)
             masks.append(mask)
             assert mask is not None
-        # srcs2 = srcs
 
-        # torch.save(srcs2, 'srcs2.pt')
-        # raise 'sdfd'
-        decoder_output = self.pixel_decoder(o['backbone_fpn'])
-        # decoder_output = self.pixel_decoder(srcs2+[srcs2[-1]])
+        decoder_output = self.pixel_decoder(features_2)
         # decoder_output = self.pixel_decoder(o['backbone_fpn'])
         # print('decoder_output.mask_features=', decoder_output.mask_features)
         # raise 'sdfdf'
@@ -770,11 +774,11 @@ def build_criterion_and_postprocessors(args):
     matcher = build_matcher(args)
     weight_dict = {
       'loss_ce': 2, 
-      'loss_bbox': 5,
+      'loss_bbox': 4,
       'loss_dice': 2,
       'loss_mask': 2,
-      'loss_giou': 2,
     }
+    weight_dict['loss_giou'] = 2
     # TODO this is a hack
     if args.aux_loss:
         aux_weight_dict = {}

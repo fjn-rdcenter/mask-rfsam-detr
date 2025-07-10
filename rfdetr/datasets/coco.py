@@ -9,7 +9,7 @@ import rfdetr.datasets.transforms as T
 
 
 def compute_multi_scale_scales(resolution, expanded_scales=False):
-    return [448,672]
+    return [896,1344]
     if resolution == 640:
         # assume we're doing the original 640x640 and therefore patch_size is 16
         patch_size = 16

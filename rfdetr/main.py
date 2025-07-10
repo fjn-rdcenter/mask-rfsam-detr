@@ -124,10 +124,11 @@ class Model:
                 if any(name.endswith(x) for x in query_param_names):
                     checkpoint['model'][name] = state[:num_desired_queries]
 
-            current_model_dict = self.model.state_dict()
-            new_state_dict={k:v if v.size()==current_model_dict[k].size()  else  current_model_dict[k] for k,v in zip(current_model_dict.keys(), checkpoint['model'].values())}
-            self.model.load_state_dict(new_state_dict, strict=False)
-            # self.model.load_state_dict(checkpoint['model'], strict=False)
+            # current_model_dict = self.model.state_dict()
+
+            # new_state_dict={k:v if v.size()==current_model_dict[k].size()  else  current_model_dict[k] for k,v in zip(current_model_dict.keys(), checkpoint['model'].values())}
+            # self.model.load_state_dict(new_state_dict, strict=False)
+            self.model.load_state_dict(checkpoint['model'], strict=False)
 
         if args.backbone_lora:
             print("Applying LORA to backbone")
@@ -190,7 +191,7 @@ class Model:
 
         param_dicts = [p for p in param_dicts if p['params'].requires_grad]
 
-        optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=args.lr, 
+        optimizer = torch.optim.AdamW(param_dicts, lr=args.lr, 
                                     weight_decay=args.weight_decay)
         # Choose the learning rate scheduler based on the new argument
 
@@ -599,6 +600,7 @@ if __name__ == '__main__':
             "set_cost_class",
             "set_cost_bbox",
             "set_cost_giou",
+            "set_cost_mask",
             "cls_loss_coef",
             "bbox_loss_coef",
             "giou_loss_coef",
@@ -730,6 +732,8 @@ def get_args_parser():
     # * Matcher
     parser.add_argument('--set_cost_class', default=2, type=float,
                         help="Class coefficient in the matching cost")
+    parser.add_argument("--set_cost_mask", default=2.0, type=float,
+                    help="weight for the mask matching cost")
     parser.add_argument('--set_cost_bbox', default=5, type=float,
                         help="L1 box coefficient in the matching cost")
     parser.add_argument('--set_cost_giou', default=2, type=float,
@@ -893,6 +897,7 @@ def populate_args(
     set_cost_class=2,
     set_cost_bbox=5,
     set_cost_giou=2,
+    set_cost_mask=2,
     
     # Loss coefficients
     cls_loss_coef=2,
@@ -1005,6 +1010,7 @@ def populate_args(
         set_cost_class=set_cost_class,
         set_cost_bbox=set_cost_bbox,
         set_cost_giou=set_cost_giou,
+        set_cost_mask=set_cost_mask,
         cls_loss_coef=cls_loss_coef,
         bbox_loss_coef=bbox_loss_coef,
         giou_loss_coef=giou_loss_coef,
