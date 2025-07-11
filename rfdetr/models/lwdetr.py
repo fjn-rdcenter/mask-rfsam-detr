@@ -104,7 +104,7 @@ class LWDETR(nn.Module):
         from transformers import AutoConfig
         from transformers.models.mask2former.modeling_mask2former import Mask2FormerPixelDecoder, Mask2FormerPixelDecoderOutput
         config = AutoConfig.from_pretrained('facebook/mask2former-swin-tiny-coco-instance')
-        config.encoder_layers=0
+        config.encoder_layers=2
         self.pixel_decoder = Mask2FormerPixelDecoder(config, feature_channels = [256,256,256])
         self.spatial_proj = nn.ModuleList([
           nn.Conv2d(256, hidden_dim, kernel_size=(1, 1), stride=(1, 1)),

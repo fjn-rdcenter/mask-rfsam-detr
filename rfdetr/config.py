@@ -27,7 +27,7 @@ class ModelConfig(BaseModel):
     pretrain_weights: Optional[str] = None
     device: Literal["cpu", "cuda", "mps"] = DEVICE
     resolution: int = 560
-    group_detr: int = 3
+    group_detr: int = 9
     gradient_checkpointing: bool = False
 
 class RFDETRBaseConfig(ModelConfig):
@@ -36,8 +36,8 @@ class RFDETRBaseConfig(ModelConfig):
     sa_nheads: int = 8
     ca_nheads: int = 16
     dec_n_points: int = 2
-    num_queries: int = 100
-    num_select: int = 100
+    num_queries: int = 300
+    num_select: int = 300
     projector_scale: List[Literal["P3", "P4", "P5"]] = ["P4"]
     out_feature_indexes: List[int] = [2, 5, 8, 11]
     pretrain_weights: Optional[str] = "rf-detr-base.pth"
@@ -53,7 +53,7 @@ class RFDETRLargeConfig(RFDETRBaseConfig):
 
 class TrainConfig(BaseModel):
     lr: float = 5e-5
-    lr_encoder: float = 7e-5
+    lr_encoder: float = 5e-5
     batch_size: int = 4
     grad_accum_steps: int = 4
     epochs: int = 100

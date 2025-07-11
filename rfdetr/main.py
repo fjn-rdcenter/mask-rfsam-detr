@@ -302,6 +302,12 @@ class Model:
             if args.output_dir:
                 utils.save_on_master(coco_evaluator.coco_eval["bbox"].eval, output_dir / "eval.pth")
             return
+
+                
+        state_dict = torch.load('/content/mask-rf-detr.pt')
+        current_model_dict = model_without_ddp.state_dict()
+        new_state_dict={k:v if v.size()==current_model_dict[k].size()  else  current_model_dict[k] for k,v in zip(current_model_dict.keys(), state_dict.values())}
+        model_without_ddp.load_state_dict(new_state_dict, strict=False)
         
         # for drop
         total_batch_size = effective_batch_size * utils.get_world_size()
